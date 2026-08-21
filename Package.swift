@@ -2,7 +2,7 @@
 import CompilerPluginSupport
 import PackageDescription
 
-// The swift-configuration adapter for Wire. It owns everything configuration-specific: the `@Configuration`
+// The swift-configuration adapter for Wire. It owns everything configuration-specific: the `@ConfigProperty`
 // property wrapper, which `ConfigReader` method each value type is read with, and the required-vs-defaulted
 // choice. swift-wire itself learns none of that — it sees an annotation declaring `.rewritesInjection`, and
 // emits a call to the wrapper's own `wireValue(from:)`.
@@ -32,8 +32,8 @@ let package = Package(
         .package(url: "https://github.com/swiftlang/swift-syntax", "603.0.0"..<"604.0.0"),
     ],
     targets: [
-        // The peer-macro half of `@Configuration`, so the attribute is legal on a `let` property. It
-        // generates nothing; see ConfigurationMacro.
+        // The peer-macro half of `@ConfigProperty`, so the attribute is legal on a `let` property. It
+        // generates nothing; see ConfigPropertyMacro.
         .macro(
             name: "WireConfigurationMacros",
             dependencies: [

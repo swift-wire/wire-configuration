@@ -3,14 +3,14 @@
 `WireConfiguration` — a [swift-wire](https://github.com/tachyonics/swift-wire) adapter for
 [swift-configuration](https://github.com/apple/swift-configuration).
 
-It gives you `@Configuration`, which reads a value from configuration **at the injection site**
+It gives you `@ConfigProperty`, which reads a value from configuration **at the injection site**
 instead of injecting a `ConfigReader` and calling it:
 
 ```swift
 @Provides
 func couchDBClient(
-    @Configuration(forKey: "couchdb.host", default: "localhost") host: String,
-    @Configuration(forKey: "couchdb.port", default: 5984) port: Int
+    @ConfigProperty(forKey: "couchdb.host", default: "localhost") host: String,
+    @ConfigProperty(forKey: "couchdb.port", default: 5984) port: Int
 ) -> ConfiguredHTTPClient {
     ConfiguredHTTPClient(baseURL: "http://\(host):\(port)")
 }
@@ -26,7 +26,7 @@ verbatim:
 
 ```swift
 private func _wireRewrite_…(_wireProvider: ConfigReader) throws -> String {
-    try Configuration<String>.wireValue(from: _wireProvider, forKey: "couchdb.host", default: "localhost")
+    try ConfigProperty<String>.wireValue(from: _wireProvider, forKey: "couchdb.host", default: "localhost")
 }
 ```
 
@@ -74,16 +74,16 @@ Which form you get is decided by the site's own type and whether you write a def
 
 | Written | Absent key |
 | --- | --- |
-| `@Configuration(forKey: "port", default: 8080) port: Int` | the default |
-| `@Configuration(forKey: "dsn") dsn: String?` | `nil` |
-| `@Configuration(forKey: "dsn") dsn: String` | a startup failure — the binding throws |
+| `@ConfigProperty(forKey: "port", default: 8080) port: Int` | the default |
+| `@ConfigProperty(forKey: "dsn") dsn: String?` | `nil` |
+| `@ConfigProperty(forKey: "dsn") dsn: String` | a startup failure — the binding throws |
 
 The last is what makes a missing required value fail at construction rather than silently fall back.
 
 `isSecret:` is available on every form, and governs redaction in logging and debugging:
 
 ```swift
-@Configuration(forKey: "db.password", isSecret: true) password: String
+@ConfigProperty(forKey: "db.password", isSecret: true) password: String
 ```
 
 ## Where you can write it
@@ -93,19 +93,19 @@ All three injection sites, and the property form takes `var` or `let`:
 ```swift
 @Singleton
 struct Config {
-    @Inject @Configuration(forKey: "maxConnections", default: 10) let maxConnections: Int
+    @Inject @ConfigProperty(forKey: "maxConnections", default: 10) let maxConnections: Int
 }
 
 @Singleton
 struct Config {
     let maxConnections: Int
-    @Inject init(@Configuration(forKey: "maxConnections", default: 10) max: Int) {
+    @Inject init(@ConfigProperty(forKey: "maxConnections", default: 10) max: Int) {
         self.maxConnections = max
     }
 }
 ```
 
-Those are equivalent. `@Configuration` ships as two declarations sharing one name — a property wrapper,
+Those are equivalent. `@ConfigProperty` ships as two declarations sharing one name — a property wrapper,
 the only mechanism that can attach to a *parameter*, and a peer macro, the only one that can attach to a
 `let` *property* (a property wrapper "can only be applied to a 'var'"). Swift resolves each use site to
 whichever applies, so you never have to think about it.
@@ -139,7 +139,7 @@ wire-mvc's `WireMVCBuildPlugin`. The rewrite happens in `WireGen`, which all of 
 ## Not yet built
 
 Selecting *which* `ConfigReader` to read from, for an app that binds more than one
-(`@Configuration(ConfigKeys.testReader, forKey: …)`). It is not an adapter-only change: the synthesised
+(`@ConfigProperty(ConfigKeys.testReader, forKey: …)`). It is not an adapter-only change: the synthesised
 producer's dependency on the reader is unkeyed, so supporting it means swift-wire's pass reading the
 annotation's first argument to key that dependency — the one place it would stop copying the arguments
 verbatim.

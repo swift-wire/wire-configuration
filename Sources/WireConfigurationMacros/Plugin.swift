@@ -2,7 +2,7 @@ import SwiftCompilerPlugin
 import SwiftSyntax
 import SwiftSyntaxMacros
 
-/// `@Configuration` on a *property* is a marker peer macro generating nothing, exactly as `@Container` is.
+/// `@ConfigProperty` on a *property* is a marker peer macro generating nothing, exactly as `@Container` is.
 ///
 /// It exists so the attribute is legal on a `let`. A property wrapper "can only be applied to a 'var'", so
 /// without this the property form would force every consumer to give up immutability — while the
@@ -11,7 +11,7 @@ import SwiftSyntaxMacros
 /// whichever can apply there, so both forms are expressible and equivalent.
 ///
 /// Wire reads the attribute syntactically, before expansion, so the two look identical to it.
-public struct ConfigurationMacro: PeerMacro {
+public struct ConfigPropertyMacro: PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,
         providingPeersOf declaration: some DeclSyntaxProtocol,
@@ -23,5 +23,5 @@ public struct ConfigurationMacro: PeerMacro {
 
 @main
 struct WireConfigurationPlugin: CompilerPlugin {
-    let providingMacros: [any Macro.Type] = [ConfigurationMacro.self]
+    let providingMacros: [any Macro.Type] = [ConfigPropertyMacro.self]
 }
