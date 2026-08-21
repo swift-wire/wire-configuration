@@ -1,5 +1,6 @@
 import Configuration
 import Testing
+import Wire
 
 @testable import WireConfiguration
 
@@ -65,5 +66,30 @@ struct ConfigPropertyTests {
     @Test func attachmentCarriesTheValue() {
         func take(@ConfigProperty(forKey: "port", default: 8080) port: Int) -> Int { port }
         #expect(take(port: 42) == 42)
+    }
+
+    // MARK: - Selecting which reader to read from
+
+    /// `reader:` names which `ConfigReader` binding a site reads from, for a graph binding more than one.
+    /// It is compiled here, not asserted: the value never reaches this package. Wire lifts the argument
+    /// out of the annotation to key the synthesised producer's dependency, so `wireValue` is handed an
+    /// already-resolved reader either way — which is why there is no `wireValue` overload taking one.
+    ///
+    /// What this pins is that both spellings type-check at a parameter site against the *same*
+    /// initialiser, so the selector costs no overloads.
+    ///
+    /// That the label here matches the one in `.labelled("reader")` cannot be checked from this package:
+    /// the capability is a phantom argument Wire reads from source syntax and never executes, so there is
+    /// no stored value to assert against. A rename touching only one of the two would compile here and
+    /// fail at a consumer, which is what swift-wire's `InjectionRewriteHarness` exists to catch.
+    @Test func theSelectorIsAcceptedAndDoesNotReachResolution() {
+        enum Keys {
+            static let overrides = BindingKey<ConfigReader>()
+        }
+        func take(
+            @ConfigProperty(forKey: "port", default: 8080) plain: Int,
+            @ConfigProperty(reader: Keys.overrides, forKey: "port", default: 8080) selected: Int
+        ) -> Int { plain + selected }
+        #expect(take(plain: 1, selected: 2) == 3)
     }
 }

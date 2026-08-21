@@ -136,10 +136,30 @@ Wire activates a dependency's annotations only when it is a *direct* dependency:
 Any Wire build plugin works — swift-wire's `WireBuildPlugin`, or an adapter's such as
 wire-mvc's `WireMVCBuildPlugin`. The rewrite happens in `WireGen`, which all of them run.
 
-## Not yet built
+## Selecting which reader
 
-Selecting *which* `ConfigReader` to read from, for an app that binds more than one
-(`@ConfigProperty(ConfigKeys.testReader, forKey: …)`). It is not an adapter-only change: the synthesised
-producer's dependency on the reader is unkeyed, so supporting it means swift-wire's pass reading the
-annotation's first argument to key that dependency — the one place it would stop copying the arguments
-verbatim.
+An app that binds more than one `ConfigReader` names which one a site reads from:
+
+```swift
+enum ConfigKeys {
+    static let overrides = BindingKey<ConfigReader>()
+}
+
+@Provides(ConfigKeys.overrides)
+func overrideReader() -> ConfigReader { ConfigReader(providers: [...]) }
+
+@Provides
+func client(
+    @ConfigProperty(forKey: "couchdb.host", default: "localhost") host: String,
+    @ConfigProperty(reader: ConfigKeys.overrides, forKey: "couchdb.port", default: 5984) port: Int
+) -> Client
+```
+
+Omit `reader:` and the reader resolves by type, as every site above does.
+
+`reader:` is the one argument Wire does not copy verbatim. It lifts it out and uses it to key the
+synthesised producer's dependency, so `wireValue` is handed an already-resolved reader either way — which
+is why no `wireValue` overload takes one. It costs no extra initialisers: the parameter is defaulted, so
+one initialiser admits both spellings.
+
+Two sites with identical keys reading *different* readers are different bindings, not one.

@@ -59,14 +59,30 @@ public struct ConfigProperty<Value> {
 extension ConfigProperty {
     // MARK: Int
 
-    public init(wrappedValue: Value, forKey key: String, default value: Value, isSecret: Bool = false)
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        default value: Value,
+        isSecret: Bool = false
+    )
     where Value == Int {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == Int? {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == Int? {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == Int {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == Int {
         self.value = wrappedValue
     }
 
@@ -99,14 +115,30 @@ extension ConfigProperty {
 
     // MARK: String
 
-    public init(wrappedValue: Value, forKey key: String, default value: Value, isSecret: Bool = false)
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        default value: Value,
+        isSecret: Bool = false
+    )
     where Value == String {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == String? {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == String? {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == String {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == String {
         self.value = wrappedValue
     }
 
@@ -139,14 +171,30 @@ extension ConfigProperty {
 
     // MARK: Bool
 
-    public init(wrappedValue: Value, forKey key: String, default value: Value, isSecret: Bool = false)
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        default value: Value,
+        isSecret: Bool = false
+    )
     where Value == Bool {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == Bool? {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == Bool? {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == Bool {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == Bool {
         self.value = wrappedValue
     }
 
@@ -179,14 +227,30 @@ extension ConfigProperty {
 
     // MARK: Double
 
-    public init(wrappedValue: Value, forKey key: String, default value: Value, isSecret: Bool = false)
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        default value: Value,
+        isSecret: Bool = false
+    )
     where Value == Double {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == Double? {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == Double? {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == Double {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == Double {
         self.value = wrappedValue
     }
 
@@ -219,14 +283,30 @@ extension ConfigProperty {
 
     // MARK: [String]
 
-    public init(wrappedValue: Value, forKey key: String, default value: Value, isSecret: Bool = false)
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        default value: Value,
+        isSecret: Bool = false
+    )
     where Value == [String] {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == [String]? {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == [String]? {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == [String] {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == [String] {
         self.value = wrappedValue
     }
 
@@ -259,14 +339,30 @@ extension ConfigProperty {
 
     // MARK: [Int]
 
-    public init(wrappedValue: Value, forKey key: String, default value: Value, isSecret: Bool = false)
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        default value: Value,
+        isSecret: Bool = false
+    )
     where Value == [Int] {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == [Int]? {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == [Int]? {
         self.value = wrappedValue
     }
-    public init(wrappedValue: Value, forKey key: String, isSecret: Bool = false) where Value == [Int] {
+    public init(
+        wrappedValue: Value,
+        reader: BindingKey<ConfigReader>? = nil,
+        forKey key: String,
+        isSecret: Bool = false
+    ) where Value == [Int] {
         self.value = wrappedValue
     }
 
@@ -304,7 +400,7 @@ extension ConfigProperty: Sendable where Value: Sendable {}
 /// dependencies by canonical type text, so it cannot see through `ConfigProperty<Value>.Provider`.
 public let wireConfigPropertyAnnotation = WireAdapterAnnotationV1(
     annotation: "ConfigProperty",
-    capability: .rewritesInjection(provider: "ConfigReader")
+    capability: .rewritesInjection(provider: "ConfigReader", selector: .labelled("reader"))
 )
 
 // The *macro* half of `@ConfigProperty`, sharing the wrapper's name. Swift resolves each use site to
@@ -320,29 +416,59 @@ public let wireConfigPropertyAnnotation = WireAdapterAnnotationV1(
 // site does.
 
 @attached(peer)
-public macro ConfigProperty(forKey: String, default: Int, isSecret: Bool = false) =
+public macro ConfigProperty(
+    reader: BindingKey<ConfigReader>? = nil,
+    forKey: String,
+    default: Int,
+    isSecret: Bool = false
+) =
     #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro ConfigProperty(forKey: String, default: String, isSecret: Bool = false) =
+public macro ConfigProperty(
+    reader: BindingKey<ConfigReader>? = nil,
+    forKey: String,
+    default: String,
+    isSecret: Bool = false
+) =
     #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro ConfigProperty(forKey: String, default: Bool, isSecret: Bool = false) =
+public macro ConfigProperty(
+    reader: BindingKey<ConfigReader>? = nil,
+    forKey: String,
+    default: Bool,
+    isSecret: Bool = false
+) =
     #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro ConfigProperty(forKey: String, default: Double, isSecret: Bool = false) =
+public macro ConfigProperty(
+    reader: BindingKey<ConfigReader>? = nil,
+    forKey: String,
+    default: Double,
+    isSecret: Bool = false
+) =
     #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro ConfigProperty(forKey: String, default: [String], isSecret: Bool = false) =
+public macro ConfigProperty(
+    reader: BindingKey<ConfigReader>? = nil,
+    forKey: String,
+    default: [String],
+    isSecret: Bool = false
+) =
     #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro ConfigProperty(forKey: String, default: [Int], isSecret: Bool = false) =
+public macro ConfigProperty(
+    reader: BindingKey<ConfigReader>? = nil,
+    forKey: String,
+    default: [Int],
+    isSecret: Bool = false
+) =
     #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro ConfigProperty(forKey: String, isSecret: Bool = false) =
+public macro ConfigProperty(reader: BindingKey<ConfigReader>? = nil, forKey: String, isSecret: Bool = false) =
     #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
