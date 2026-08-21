@@ -66,12 +66,4 @@ struct ConfigurationTests {
         func take(@Configuration(forKey: "port", default: 8080) port: Int) -> Int { port }
         #expect(take(port: 42) == 42)
     }
-
-    /// An unsupported value type must still fail at the annotation rather than slipping through — the
-    /// reason the constrained initialisers are the only way in, and `wrappedValue` is not a stored
-    /// `public let` (which would synthesise an unconstrained memberwise initialiser).
-    ///
-    /// Not expressible as a test — it is a compile error — so it is pinned by construction: there is no
-    /// `init(wrappedValue:)` without a `where Value == …` clause. See `Configuration.value`.
-    @Test func unsupportedTypesAreRejectedAtCompileTime() {}
 }
