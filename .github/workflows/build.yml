@@ -1,0 +1,86 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# The `6.3.3` literals are deliberate, and mirror swift-wire's own jobs: `.swift-version` names the
+# toolchain this package is developed against (a 6.4 snapshot, matching swift-wire and wire-mvc), while
+# these jobs are a regression check that it still compiles on the current *release* toolchain. Bumping
+# `.swift-version` must not touch them — they move only when released Swift does.
+#
+# There is nothing proposal-native here (no `~Copyable` reader/sender, no macOS 26 deployment), so unlike
+# wire-open-api this package needs no pinned-snapshot job: a released toolchain is the real target.
+jobs:
+  BuildAndTestLinux:
+    name: Linux ${{ matrix.os }} / Swift ${{ matrix.swift-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+        swift-version: ["6.3.3"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: SwiftyLab/setup-swift@v1
+        with:
+          swift-version: ${{ matrix.swift-version }}
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev curl unzip
+      - name: Build
+        run: swift build -c release -Xswiftc -strict-concurrency=complete
+      - name: Run tests
+        run: swift test
+
+  BuildAndTestMacOS:
+    name: macOS / Swift ${{ matrix.swift-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-version: ["6.3.3"]
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: SwiftyLab/setup-swift@v1
+        with:
+          swift-version: ${{ matrix.swift-version }}
+      - name: Build
+        run: swift build -c release -Xswiftc -strict-concurrency=complete
+      - name: Run tests
+        run: swift test
+
+  SwiftFormat:
+    name: swift-format / Swift ${{ matrix.swift-version }}
+    strategy:
+      matrix:
+        swift-version: ["6.3"]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: SwiftyLab/setup-swift@v1
+        with:
+          swift-version: ${{ matrix.swift-version }}
+      - name: Run swift-format
+        run: swift-format format --recursive --in-place .
+      - name: Check for formatting differences
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git diff --exit-code
+
+  SwiftLint:
+    name: SwiftLint 0.63.2
+    # `swiftlint lint` is SwiftSyntax-based and needs no toolchain. The `unused_import` *analyzer* rule is
+    # not run: it drives SourceKit against a compiler build log, and the compiler's own
+    # `InternalImportsByDefault` already reports unused imports natively.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install SwiftLint
+        run: |
+          curl -sL https://github.com/realm/SwiftLint/releases/download/0.63.2/swiftlint_linux_amd64.zip -o swiftlint.zip
+          unzip -o swiftlint.zip -d /usr/local/bin
+          chmod +x /usr/local/bin/swiftlint
+      - name: SwiftLint
+        run: swiftlint lint --quiet
