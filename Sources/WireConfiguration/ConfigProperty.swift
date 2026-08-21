@@ -1,19 +1,19 @@
 public import Configuration
 public import Wire
 
-// `@Configuration` — read a value from configuration at an injection site, instead of injecting a
+// `@ConfigProperty` — read a value from configuration at an injection site, instead of injecting a
 // `ConfigReader` and calling it.
 //
 //     @Provides static func couchDB(
-//         @Configuration(forKey: "couchdb.host", default: "localhost") host: String
+//         @ConfigProperty(forKey: "couchdb.host", default: "localhost") host: String
 //     ) -> Client
 //
 // The value becomes the binding, so a consumer depends on `String` rather than on a collaborator it has to
 // call, the key is visible in the signature, and a test substitutes a value rather than a configured
 // reader. Wire synthesises the producer:
 //
-//     private func _wireRewrite_…(_wireProvider: Configuration<String>.Provider) throws -> String {
-//         try Configuration<String>(forKey: "couchdb.host", default: "localhost").wireValue(from: _wireProvider)
+//     private func _wireRewrite_…(_wireProvider: ConfigProperty<String>.Provider) throws -> String {
+//         try ConfigProperty<String>(forKey: "couchdb.host", default: "localhost").wireValue(from: _wireProvider)
 //     }
 //
 // — copying the argument list verbatim. Everything configuration-specific is below: which reader method a
@@ -29,7 +29,7 @@ public import Wire
 /// array forms. An unsupported type fails to compile *at the annotation*, listing what is supported. To add
 /// your own, extend this type with initialisers in the same shape.
 @propertyWrapper
-public struct Configuration<Value> {
+public struct ConfigProperty<Value> {
     /// The *attachment* role, and all of it. Immutable, and never absent: the wrapper is only ever applied
     /// to a **parameter**, where the compiler always has a value to pass. A property site resolves to the
     /// macro below instead — for a `let` because a property wrapper cannot attach to one, and for a `var`
@@ -49,14 +49,14 @@ public struct Configuration<Value> {
 // constructs no instance to resolve. Three forms per type, told apart by the site's own type and whether a
 // default is written:
 //
-//   • defaulted — `@Configuration(forKey:default:) x: T`  → absent yields the default
-//   • optional  — `@Configuration(forKey:) x: T?`         → absent yields nil
-//   • required  — `@Configuration(forKey:) x: T`          → absent is a startup failure
+//   • defaulted — `@ConfigProperty(forKey:default:) x: T`  → absent yields the default
+//   • optional  — `@ConfigProperty(forKey:) x: T?`         → absent yields nil
+//   • required  — `@ConfigProperty(forKey:) x: T`          → absent is a startup failure
 //
 // swift-configuration has all three reads; splitting them this way is what lets an app say which it means,
 // while Wire knows that none of the three concepts exist.
 
-extension Configuration {
+extension ConfigProperty {
     // MARK: Int
 
     public init(wrappedValue: Value, forKey key: String, default value: Value, isSecret: Bool = false)
@@ -298,51 +298,51 @@ extension Configuration {
     }
 }
 
-extension Configuration: Sendable where Value: Sendable {}
+extension ConfigProperty: Sendable where Value: Sendable {}
 
-/// Declares `@Configuration` to Wire. `provider:` is the one thing Wire cannot derive — it matches
-/// dependencies by canonical type text, so it cannot see through `Configuration<Value>.Provider`.
-public let wireConfigurationAnnotation = WireAdapterAnnotationV1(
-    annotation: "Configuration",
+/// Declares `@ConfigProperty` to Wire. `provider:` is the one thing Wire cannot derive — it matches
+/// dependencies by canonical type text, so it cannot see through `ConfigProperty<Value>.Provider`.
+public let wireConfigPropertyAnnotation = WireAdapterAnnotationV1(
+    annotation: "ConfigProperty",
     capability: .rewritesInjection(provider: "ConfigReader")
 )
 
-// The *macro* half of `@Configuration`, sharing the wrapper's name. Swift resolves each use site to
+// The *macro* half of `@ConfigProperty`, sharing the wrapper's name. Swift resolves each use site to
 // whichever declaration can apply there: a parameter takes the property wrapper (a macro cannot attach to
 // one), and a `let` property takes a macro (a property wrapper "can only be applied to a 'var'"). The
 // macro generates nothing — Wire reads the attribute syntactically either way — so the two forms below are
 // equivalent, and the property form need not give up immutability:
 //
-//     @Inject @Configuration(forKey: "maxConnections", default: 10) let maxConnections: Int
-//     @Inject init(@Configuration(forKey: "maxConnections", default: 10) max: Int) { … }
+//     @Inject @ConfigProperty(forKey: "maxConnections", default: 10) let maxConnections: Int
+//     @Inject init(@ConfigProperty(forKey: "maxConnections", default: 10) max: Int) { … }
 //
 // One overload per shape, mirroring the initialisers, so a property site accepts exactly what a parameter
 // site does.
 
 @attached(peer)
-public macro Configuration(forKey: String, default: Int, isSecret: Bool = false) =
-    #externalMacro(module: "WireConfigurationMacros", type: "ConfigurationMacro")
+public macro ConfigProperty(forKey: String, default: Int, isSecret: Bool = false) =
+    #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro Configuration(forKey: String, default: String, isSecret: Bool = false) =
-    #externalMacro(module: "WireConfigurationMacros", type: "ConfigurationMacro")
+public macro ConfigProperty(forKey: String, default: String, isSecret: Bool = false) =
+    #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro Configuration(forKey: String, default: Bool, isSecret: Bool = false) =
-    #externalMacro(module: "WireConfigurationMacros", type: "ConfigurationMacro")
+public macro ConfigProperty(forKey: String, default: Bool, isSecret: Bool = false) =
+    #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro Configuration(forKey: String, default: Double, isSecret: Bool = false) =
-    #externalMacro(module: "WireConfigurationMacros", type: "ConfigurationMacro")
+public macro ConfigProperty(forKey: String, default: Double, isSecret: Bool = false) =
+    #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro Configuration(forKey: String, default: [String], isSecret: Bool = false) =
-    #externalMacro(module: "WireConfigurationMacros", type: "ConfigurationMacro")
+public macro ConfigProperty(forKey: String, default: [String], isSecret: Bool = false) =
+    #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro Configuration(forKey: String, default: [Int], isSecret: Bool = false) =
-    #externalMacro(module: "WireConfigurationMacros", type: "ConfigurationMacro")
+public macro ConfigProperty(forKey: String, default: [Int], isSecret: Bool = false) =
+    #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
 
 @attached(peer)
-public macro Configuration(forKey: String, isSecret: Bool = false) =
-    #externalMacro(module: "WireConfigurationMacros", type: "ConfigurationMacro")
+public macro ConfigProperty(forKey: String, isSecret: Bool = false) =
+    #externalMacro(module: "WireConfigurationMacros", type: "ConfigPropertyMacro")
