@@ -6,41 +6,54 @@ on:
   pull_request:
     branches: [ main ]
 
-# The `6.3.3` literals are deliberate, and mirror swift-wire's own jobs: `.swift-version` names the
-# toolchain this package is developed against (a 6.4 snapshot, matching swift-wire and wire-mvc), while
-# these jobs are a regression check that it still compiles on the current *release* toolchain. Bumping
-# `.swift-version` must not touch them — they move only when released Swift does.
+# Both build jobs need a *recent SDK*, not merely a recent Swift, and that is a property of this package's
+# dependency graph rather than its own sources. swift-configuration's `FileProvider` calls `Data.bytes`
+# under `canImport(FoundationEssentials)`; pairing a swift.org toolchain with an older macOS SDK gives
 #
-# There is nothing proposal-native here (no `~Copyable` reader/sender, no macOS 26 deployment), so unlike
-# wire-open-api this package needs no pinned-snapshot job: a released toolchain is the real target.
+#     error: value of type 'Data' has no member 'bytes'
+#
+# which is what apple/swift-configuration#178 is, and what its maintainer describes as "using
+# Swift.org-downloaded Swift toolchains with the macOS SDK from an older Xcode". So macOS runs on
+# `macos-26`, whose preinstalled Xcode 26 SDK has it, rather than `macos-15`.
+#
+# Linux has no SDK to mismatch, but the same API floor applies, so it runs the toolchain named in
+# `.swift-version` — the one this package is developed against. `.swift-version` is the single source of
+# truth: bump the file, not the workflow.
 jobs:
   BuildAndTestLinux:
-    name: Linux ${{ matrix.os }} / Swift ${{ matrix.swift-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04]
-        swift-version: ["6.3.3"]
-    runs-on: ${{ matrix.os }}
+    name: Linux / Swift (pinned)
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
-      - uses: SwiftyLab/setup-swift@v1
-        with:
-          swift-version: ${{ matrix.swift-version }}
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y libssl-dev curl unzip
+      - name: Read the pinned toolchain
+        run: echo "SWIFT_SNAPSHOT=$(cat .swift-version)" >> "$GITHUB_ENV"
+      - name: Install system dependencies
+        # libcurl4-openssl-dev is required by the toolchain itself (Foundation networking on Linux) and must
+        # precede the install, or Swiftly's post-install check fails.
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev libsqlite3-dev libcurl4-openssl-dev curl
+      - name: Install Swiftly + the pinned toolchain
+        run: |
+          curl -L "https://download.swift.org/swiftly/linux/swiftly-$(uname -m).tar.gz" | tar zxf -
+          ./swiftly init --assume-yes --skip-install
+          echo "$HOME/.local/share/swiftly/bin" >> "$GITHUB_PATH"
+          # No `--use`: every command runs through `swiftly run`, which reads `.swift-version` itself.
+          # `--use` would rewrite that file (dropping its trailing newline) and dirty the tree, which the
+          # swift-format job's `git diff --exit-code` guard then fails on.
+          "$HOME/.local/share/swiftly/bin/swiftly" install "$SWIFT_SNAPSHOT" --assume-yes
       - name: Build
-        run: swift build -c release -Xswiftc -strict-concurrency=complete
-      - name: Run tests
-        run: swift test
+        run: swiftly run swift build
+      - name: Test
+        run: swiftly run swift test
 
   BuildAndTestMacOS:
-    name: macOS / Swift ${{ matrix.swift-version }}
+    name: macOS 26 / Swift ${{ matrix.swift-version }}
     strategy:
       fail-fast: false
       matrix:
         swift-version: ["6.3.3"]
-    runs-on: macos-15
+    # macos-26 for its Xcode 26 SDK — see the note above. On macos-15 this job fails inside
+    # swift-configuration, not in this package.
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
       - uses: SwiftyLab/setup-swift@v1
@@ -52,18 +65,22 @@ jobs:
         run: swift test
 
   SwiftFormat:
-    name: swift-format / Swift ${{ matrix.swift-version }}
-    strategy:
-      matrix:
-        swift-version: ["6.3"]
+    name: swift-format (pinned)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
-      - uses: SwiftyLab/setup-swift@v1
-        with:
-          swift-version: ${{ matrix.swift-version }}
+      - name: Read the pinned toolchain
+        run: echo "SWIFT_SNAPSHOT=$(cat .swift-version)" >> "$GITHUB_ENV"
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev libsqlite3-dev libcurl4-openssl-dev curl
+      - name: Install Swiftly + the pinned toolchain
+        run: |
+          curl -L "https://download.swift.org/swiftly/linux/swiftly-$(uname -m).tar.gz" | tar zxf -
+          ./swiftly init --assume-yes --skip-install
+          echo "$HOME/.local/share/swiftly/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/share/swiftly/bin/swiftly" install "$SWIFT_SNAPSHOT" --assume-yes
       - name: Run swift-format
-        run: swift-format format --recursive --in-place .
+        run: swiftly run swift-format format --recursive --in-place .
       - name: Check for formatting differences
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
