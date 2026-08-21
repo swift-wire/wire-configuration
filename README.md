@@ -32,6 +32,21 @@ private func _wireRewrite_…(_wireProvider: ConfigReader) throws -> String {
 
 Which method reads which type, and what an absent key means, live here.
 
+## Requirements
+
+Swift 6.3+, and — on macOS — a **recent SDK**: Xcode 26 or later. swift-configuration calls `Data.bytes`
+under `canImport(FoundationEssentials)`, which needs that declaration in the SDK you compile against.
+Pairing a swift.org toolchain with an older Xcode gives
+
+```
+error: value of type 'Data' has no member 'bytes'
+```
+
+inside swift-configuration rather than in your own code (apple/swift-configuration#178). It is not a
+deployment-target constraint — the same call type-checks for macOS 13 against a current SDK — so it cannot
+be expressed in `Package.swift`, and `swift build` will not tell you which SDK it used. If you see that
+error, check `xcodebuild -version`.
+
 ## Bind a `ConfigReader`
 
 The synthesised producer depends on a `ConfigReader` like any other binding, so the graph has to have

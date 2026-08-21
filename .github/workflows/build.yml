@@ -1,0 +1,103 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Both build jobs need a *recent SDK*, not merely a recent Swift, and that is a property of this package's
+# dependency graph rather than its own sources. swift-configuration's `FileProvider` calls `Data.bytes`
+# under `canImport(FoundationEssentials)`; pairing a swift.org toolchain with an older macOS SDK gives
+#
+#     error: value of type 'Data' has no member 'bytes'
+#
+# which is what apple/swift-configuration#178 is, and what its maintainer describes as "using
+# Swift.org-downloaded Swift toolchains with the macOS SDK from an older Xcode". So macOS runs on
+# `macos-26`, whose preinstalled Xcode 26 SDK has it, rather than `macos-15`.
+#
+# Linux has no SDK to mismatch, but the same API floor applies, so it runs the toolchain named in
+# `.swift-version` — the one this package is developed against. `.swift-version` is the single source of
+# truth: bump the file, not the workflow.
+jobs:
+  BuildAndTestLinux:
+    name: Linux / Swift (pinned)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read the pinned toolchain
+        run: echo "SWIFT_SNAPSHOT=$(cat .swift-version)" >> "$GITHUB_ENV"
+      - name: Install system dependencies
+        # libcurl4-openssl-dev is required by the toolchain itself (Foundation networking on Linux) and must
+        # precede the install, or Swiftly's post-install check fails.
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev libsqlite3-dev libcurl4-openssl-dev curl
+      - name: Install Swiftly + the pinned toolchain
+        run: |
+          curl -L "https://download.swift.org/swiftly/linux/swiftly-$(uname -m).tar.gz" | tar zxf -
+          ./swiftly init --assume-yes --skip-install
+          echo "$HOME/.local/share/swiftly/bin" >> "$GITHUB_PATH"
+          # No `--use`: every command runs through `swiftly run`, which reads `.swift-version` itself.
+          # `--use` would rewrite that file (dropping its trailing newline) and dirty the tree, which the
+          # swift-format job's `git diff --exit-code` guard then fails on.
+          "$HOME/.local/share/swiftly/bin/swiftly" install "$SWIFT_SNAPSHOT" --assume-yes
+      - name: Build
+        run: swiftly run swift build
+      - name: Test
+        run: swiftly run swift test
+
+  BuildAndTestMacOS:
+    name: macOS 26 / Swift ${{ matrix.swift-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-version: ["6.3.3"]
+    # macos-26 for its Xcode 26 SDK — see the note above. On macos-15 this job fails inside
+    # swift-configuration, not in this package.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v6
+      - uses: SwiftyLab/setup-swift@v1
+        with:
+          swift-version: ${{ matrix.swift-version }}
+      - name: Build
+        run: swift build -c release -Xswiftc -strict-concurrency=complete
+      - name: Run tests
+        run: swift test
+
+  SwiftFormat:
+    name: swift-format (pinned)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Read the pinned toolchain
+        run: echo "SWIFT_SNAPSHOT=$(cat .swift-version)" >> "$GITHUB_ENV"
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev libsqlite3-dev libcurl4-openssl-dev curl
+      - name: Install Swiftly + the pinned toolchain
+        run: |
+          curl -L "https://download.swift.org/swiftly/linux/swiftly-$(uname -m).tar.gz" | tar zxf -
+          ./swiftly init --assume-yes --skip-install
+          echo "$HOME/.local/share/swiftly/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/share/swiftly/bin/swiftly" install "$SWIFT_SNAPSHOT" --assume-yes
+      - name: Run swift-format
+        run: swiftly run swift-format format --recursive --in-place .
+      - name: Check for formatting differences
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git diff --exit-code
+
+  SwiftLint:
+    name: SwiftLint 0.63.2
+    # `swiftlint lint` is SwiftSyntax-based and needs no toolchain. The `unused_import` *analyzer* rule is
+    # not run: it drives SourceKit against a compiler build log, and the compiler's own
+    # `InternalImportsByDefault` already reports unused imports natively.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install SwiftLint
+        run: |
+          curl -sL https://github.com/realm/SwiftLint/releases/download/0.63.2/swiftlint_linux_amd64.zip -o swiftlint.zip
+          unzip -o swiftlint.zip -d /usr/local/bin
+          chmod +x /usr/local/bin/swiftlint
+      - name: SwiftLint
+        run: swiftlint lint --quiet
