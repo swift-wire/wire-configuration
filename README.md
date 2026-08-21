@@ -115,7 +115,7 @@ whichever applies, so you never have to think about it.
 `Int`, `String`, `Bool`, `Double`, `[String]`, `[Int]`.
 
 An unsupported type fails to compile **at the annotation**, listing what is supported — dispatch is by
-constrained overload, not a runtime lookup. To add your own, extend `Configuration` with an initialiser
+constrained overload, not a runtime lookup. To add your own, extend `ConfigProperty` with an initialiser
 and a `wireValue` overload in the same shape.
 
 ## Consumers depend on this package directly
