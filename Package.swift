@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.3
 import CompilerPluginSupport
 import PackageDescription
 
@@ -12,6 +12,16 @@ import PackageDescription
 // wire-open-api / wire-hummingbird adapter convention.
 let package = Package(
     name: "wire-configuration",
+    // Inherited from swift-wire, which needs macOS 15 for `Synchronization`'s `Mutex`. Linux is unaffected.
+    //
+    // This package also requires a **recent macOS SDK**, which is a different axis and one SPM cannot
+    // express: `platforms:` is the deployment *target*. swift-configuration's `FileProvider` calls
+    // `Data.bytes` under `canImport(FoundationEssentials)`, and that call needs the declaration to exist in
+    // the SDK being compiled against — it is not gated on the OS being deployed to. Measured: against the
+    // Xcode 26 SDK it type-checks at deployment targets 13, 14 and 15 alike, while an older Xcode's SDK
+    // fails it outright (apple/swift-configuration#178). So raising this to `.v26` would restrict every
+    // consumer's runtime without preventing the failure. The requirement lives in CI's runner image and in
+    // the README instead.
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "WireConfiguration", targets: ["WireConfiguration"])
