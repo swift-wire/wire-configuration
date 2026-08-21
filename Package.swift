@@ -52,7 +52,10 @@ let package = Package(
         ),
         .testTarget(
             name: "WireConfigurationTests",
-            dependencies: ["WireConfiguration"]
+            // `Wire` directly, not just through `WireConfiguration`: the selector test names
+            // `BindingKey`, and `MemberImportVisibility` requires the module that declares a type it
+            // uses to be a direct dependency.
+            dependencies: ["WireConfiguration", .product(name: "Wire", package: "swift-wire")]
         ),
     ]
 )
