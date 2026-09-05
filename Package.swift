@@ -30,7 +30,7 @@ let package = Package(
         .library(name: "WireConfiguration", targets: ["WireConfiguration"])
     ],
     dependencies: [
-        .package(url: "https://github.com/tachyonics/swift-wire.git", branch: "main"),
+        .package(url: "https://github.com/swift-wire/swift-wire.git", branch: "main"),
         .package(url: "https://github.com/apple/swift-configuration.git", from: "1.0.0"),
         .package(url: "https://github.com/swiftlang/swift-syntax", "603.0.0"..<"604.0.0"),
     ],

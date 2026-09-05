@@ -1,6 +1,6 @@
 # wire-configuration
 
-`WireConfiguration` — a [swift-wire](https://github.com/tachyonics/swift-wire) adapter for
+`WireConfiguration` — a [swift-wire](https://github.com/swift-wire/swift-wire) adapter for
 [swift-configuration](https://github.com/apple/swift-configuration).
 
 It gives you `@ConfigProperty`, which reads a value from configuration **at the injection site**
