@@ -163,3 +163,11 @@ is why no `wireValue` overload takes one. It costs no extra initialisers: the pa
 one initialiser admits both spellings.
 
 Two sites with identical keys reading *different* readers are different bindings, not one.
+
+## Licence
+
+Apache-2.0. See [LICENSE](LICENSE).
+
+**Generated output is yours.** The expansion of this package's macros is not a derivative work of
+this package and carries no licence obligation to it. Use it as you would code you wrote yourself.
+Nothing this package emits carries a licence header for that reason.
