@@ -42,7 +42,7 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
-      - uses: SwiftyLab/setup-swift@v1
+      - uses: swift-wire/setup-swift@v1
         with:
           swift-version: ${{ matrix.swift-version }}
       - name: Build
