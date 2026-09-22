@@ -52,7 +52,7 @@ Which method reads which type, and what an absent key means, live here.
 
 ## Requirements
 
-Swift 6.4+, and — on macOS — a **recent SDK**: Xcode 26 or later. swift-configuration calls `Data.bytes`
+Swift 6.3+, and — on macOS — a **recent SDK**: Xcode 26 or later. swift-configuration calls `Data.bytes`
 under `canImport(FoundationEssentials)`, which needs that declaration in the SDK you compile against.
 Pairing a swift.org toolchain with an older Xcode gives
 
