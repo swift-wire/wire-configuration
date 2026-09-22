@@ -1,3 +1,21 @@
+<p align="center">
+  <a href="https://github.com/swift-wire/wire-configuration/actions/workflows/build.yml">
+    <img src="https://github.com/swift-wire/wire-configuration/actions/workflows/build.yml/badge.svg" alt="Build">
+  </a>
+  <a href="https://swiftpackageindex.com/swift-wire/wire-configuration">
+    <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fswift-wire%2Fwire-configuration%2Fbadge%3Ftype%3Dswift-versions" alt="Swift versions">
+  </a>
+  <a href="https://codecov.io/gh/swift-wire/wire-configuration">
+    <img src="https://codecov.io/gh/swift-wire/wire-configuration/graph/badge.svg" alt="Code coverage">
+  </a>
+  <a href="https://swiftpackageindex.com/swift-wire/wire-configuration">
+    <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fswift-wire%2Fwire-configuration%2Fbadge%3Ftype%3Dplatforms" alt="Platforms">
+  </a>
+  <a href="https://www.apache.org/licenses/LICENSE-2.0">
+    <img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License: Apache 2.0">
+  </a>
+</p>
+
 # wire-configuration
 
 `WireConfiguration` — a [swift-wire](https://github.com/swift-wire/swift-wire) adapter for
@@ -34,7 +52,7 @@ Which method reads which type, and what an absent key means, live here.
 
 ## Requirements
 
-Swift 6.3+, and — on macOS — a **recent SDK**: Xcode 26 or later. swift-configuration calls `Data.bytes`
+Swift 6.4+, and — on macOS — a **recent SDK**: Xcode 26 or later. swift-configuration calls `Data.bytes`
 under `canImport(FoundationEssentials)`, which needs that declaration in the SDK you compile against.
 Pairing a swift.org toolchain with an older Xcode gives
 

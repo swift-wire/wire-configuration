@@ -1,5 +1,5 @@
 {
-  "originHash" : "3a29894ab9c4cd51e42e263f80fccc8f74ce1c465bc5230578e38326af66e32c",
+  "originHash" : "6238ebefc6685bee9e015ed4327f484af2937bb0ba2718d5b26b961277deadc9",
   "pins" : [
     {
       "identity" : "swift-async-algorithms",
@@ -70,7 +70,7 @@
       "location" : "https://github.com/swift-wire/swift-wire.git",
       "state" : {
         "branch" : "main",
-        "revision" : "0da5f330e4d56224c0e06cc3f2418ff542baec10"
+        "revision" : "28f30f2b45215ae1488a5405beed8d80a182d37b"
       }
     }
   ],
