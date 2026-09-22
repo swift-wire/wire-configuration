@@ -16,47 +16,44 @@ on:
 # Swift.org-downloaded Swift toolchains with the macOS SDK from an older Xcode". So macOS runs on
 # `macos-26`, whose preinstalled Xcode 26 SDK has it, rather than `macos-15`.
 #
-# Linux has no SDK to mismatch, but the same API floor applies, so it runs the toolchain named in
-# `.swift-version` — the one this package is developed against. `.swift-version` is the single source of
-# truth: bump the file, not the workflow.
+# Linux has no SDK to mismatch, but the same API floor applies.
+#
+# The version literals below are deliberate, not a duplicated pin. `.swift-version` names the toolchain
+# this package is developed against (6.4.0 today); the build, test and cross-compile jobs are a regression
+# check that the package still builds on every released Swift it supports, and it is tools-version 6.3
+# with a swift-syntax floor on the 603 line, so 6.3.3 stays in the matrix as the floor with 6.4.0 beside
+# it — the same policy as swift-wire. Bumping `.swift-version` must not touch them. Only the swift-format
+# and Coverage jobs read the file, since one formatter and one measurement are all those need.
 jobs:
   BuildAndTestLinux:
-    name: Linux / Swift (pinned)
+    name: Linux / Swift ${{ matrix.swift-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-version: ["6.3.3", "6.4.0"]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
-      - name: Read the pinned toolchain
-        run: echo "SWIFT_SNAPSHOT=$(cat .swift-version)" >> "$GITHUB_ENV"
-      - name: Install system dependencies
-        # libcurl4-openssl-dev is required by the toolchain itself (Foundation networking on Linux) and must
-        # precede the install, or Swiftly's post-install check fails.
-        run: sudo apt-get update && sudo apt-get install -y libssl-dev libsqlite3-dev libcurl4-openssl-dev curl
-      - name: Install Swiftly + the pinned toolchain
-        run: |
-          curl -L "https://download.swift.org/swiftly/linux/swiftly-$(uname -m).tar.gz" | tar zxf -
-          ./swiftly init --assume-yes --skip-install
-          echo "$HOME/.local/share/swiftly/bin" >> "$GITHUB_PATH"
-          # No `--use`: every command runs through `swiftly run`, which reads `.swift-version` itself.
-          # `--use` would rewrite that file (dropping its trailing newline) and dirty the tree, which the
-          # swift-format job's `git diff --exit-code` guard then fails on.
-          "$HOME/.local/share/swiftly/bin/swiftly" install "$SWIFT_SNAPSHOT" --assume-yes
+      - uses: swift-wire/setup-swift@v1
+        with:
+          swift-version: ${{ matrix.swift-version }}
       - name: Build
-        run: swiftly run swift build
+        run: swift build
       - name: Test
-        run: swiftly run swift test
+        run: swift test
 
   BuildAndTestMacOS:
     name: macOS 26 / Swift ${{ matrix.swift-version }}
     strategy:
       fail-fast: false
       matrix:
-        swift-version: ["6.3.3"]
+        swift-version: ["6.3.3", "6.4.0"]
     # macos-26 for its Xcode 26 SDK — see the note above. On macos-15 this job fails inside
     # swift-configuration, not in this package.
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v6
-      - uses: SwiftyLab/setup-swift@v1
+      - uses: swift-wire/setup-swift@v1
         with:
           swift-version: ${{ matrix.swift-version }}
       - name: Build
@@ -69,18 +66,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
-      - name: Read the pinned toolchain
-        run: echo "SWIFT_SNAPSHOT=$(cat .swift-version)" >> "$GITHUB_ENV"
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libssl-dev libsqlite3-dev libcurl4-openssl-dev curl
-      - name: Install Swiftly + the pinned toolchain
-        run: |
-          curl -L "https://download.swift.org/swiftly/linux/swiftly-$(uname -m).tar.gz" | tar zxf -
-          ./swiftly init --assume-yes --skip-install
-          echo "$HOME/.local/share/swiftly/bin" >> "$GITHUB_PATH"
-          "$HOME/.local/share/swiftly/bin/swiftly" install "$SWIFT_SNAPSHOT" --assume-yes
+      - uses: swift-wire/setup-swift@v1
       - name: Run swift-format
-        run: swiftly run swift-format format --recursive --in-place .
+        run: swift-format format --recursive --in-place .
       - name: Check for formatting differences
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -101,6 +89,106 @@ jobs:
           chmod +x /usr/local/bin/swiftlint
       - name: SwiftLint
         run: swiftlint lint --quiet
+
+  SwiftSyntaxMatrix:
+    name: swift-syntax ${{ matrix.swift-syntax-major }}.x / Swift ${{ matrix.swift-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-version: ["6.3.3", "6.4.0"]
+        # Every major the declared range admits (floor + ceiling = 603..<605), on every supported compiler,
+        # matching swift-wire. SPM resolves to the newest major on its own, so without this the floor major
+        # is never actually built; the aligned pairs (603 on 6.3, 604 on 6.4) are what a real adopter gets,
+        # and the crossed pairs are the promise the range makes.
+        swift-syntax-major: ["603", "604"]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: swift-wire/setup-swift@v1
+        with:
+          swift-version: ${{ matrix.swift-version }}
+      - name: Pin swift-syntax to ${{ matrix.swift-syntax-major }}.x
+        # Narrow the declared range to a single major so SPM resolves to the matrix's swift-syntax
+        # version. Targets the exact range string in Package.swift; if that string changes the sed
+        # needs to follow — and `grep` fails the step if it no longer matched anything.
+        run: |
+          next=$((${{ matrix.swift-syntax-major }} + 1))
+          sed -i 's|"603.0.0"..<"605.0.0"|"${{ matrix.swift-syntax-major }}.0.0"..<"'${next}'.0.0"|' Package.swift
+          grep -q '"${{ matrix.swift-syntax-major }}.0.0"..<"'${next}'.0.0"' Package.swift
+          grep swift-syntax Package.swift
+      - name: Resolve dependencies
+        run: swift package update
+      - name: Build
+        run: swift build
+      - name: Run tests
+        run: swift test
+
+  StaticLinuxSDK:
+    name: Static Linux SDK / Swift ${{ matrix.swift-version }} (cross-compile to aarch64-musl)
+    strategy:
+      fail-fast: false
+      matrix:
+        # The image and the SDK bundle must be the same Swift release: an SDK only installs against the
+        # toolchain it was built for, so each row's three literals move together.
+        include:
+          - swift-version: "6.3.3"
+            sdk-url: https://download.swift.org/swift-6.3.3-release/static-sdk/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE_static-linux-0.1.0.artifactbundle.tar.gz
+            sdk-checksum: 87c3eaf908e67c0e13a84367119e12273cec1d2cd3d81f7d74bb36722d6b607b
+          - swift-version: "6.4.0"
+            sdk-url: https://download.swift.org/swift-6.4.0-release/static-sdk/swift-6.4.0-RELEASE/swift-6.4.0-RELEASE_static-linux-0.1.0.artifactbundle.tar.gz
+            sdk-checksum: 47d2fd89eebfdf9eb4d536b6710414297f755c17926cdebc4742c08982b40a9e
+    runs-on: ubuntu-24.04
+    container:
+      image: swift:${{ matrix.swift-version }}-noble
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Static Linux SDK
+        run: swift sdk install ${{ matrix.sdk-url }} --checksum ${{ matrix.sdk-checksum }}
+      - name: Cross-compile for ARM64 Linux
+        run: swift build -c release --swift-sdk aarch64-swift-linux-musl
+
+  Coverage:
+    name: Coverage / Swift (pinned)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: swift-wire/setup-swift@v1
+      - name: Run tests with coverage
+        run: swift test --enable-code-coverage --xunit-output test-results.xml
+      - name: Convert to LCOV
+        # 6.4's build system emits one `<Target>-test-runner` executable and a `<Target>.so` per test
+        # module rather than the single `.xctest` binary earlier toolchains linked. Every one of them
+        # carries instrumented code, so llvm-cov is handed all of them; the `.xctest` glob keeps the
+        # older layout working should a job ever run on one.
+        run: |
+          BIN_PATH=$(swift build --show-bin-path)
+          PROFDATA=$(find .build -name 'default.profdata' -path '*/codecov/*' | head -1)
+          objects=()
+          for f in "$BIN_PATH"/*-test-runner "$BIN_PATH"/*.so "$BIN_PATH"/*.xctest; do
+            [ -f "$f" ] && objects+=(-object "$f")
+          done
+          llvm-cov export \
+            -format=lcov \
+            -instr-profile="$PROFDATA" \
+            "${objects[@]}" \
+            -ignore-filename-regex=".build|Tests" \
+            > coverage.lcov
+      - name: Upload coverage
+        uses: codecov/codecov-action@v6
+        with:
+          files: coverage.lcov
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload test results
+        uses: codecov/codecov-action@v6
+        if: always()
+        with:
+          files: test-results.xml
+          report_type: test_results
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   LicenceHeaders:
     name: Licence headers
