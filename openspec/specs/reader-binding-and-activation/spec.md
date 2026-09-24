@@ -31,9 +31,12 @@ Pinned by: nothing yet.
 
 ### Requirement: A site may select a keyed reader
 `@ConfigProperty` SHALL accept `reader: BindingKey<ConfigReader>?` on every form, defaulting to
-`nil`. When written, WireGen SHALL key the synthesised producer's `ConfigReader` dependency by that
-key and SHALL NOT pass the argument to `wireValue`. When omitted, the reader SHALL resolve by type.
-No `wireValue` overload SHALL take a reader key.
+`nil`. When written as a reference to a declared `BindingKey<ConfigReader>` (for example
+`Keys.overrides`), WireGen SHALL key the synthesised producer's `ConfigReader` dependency by that key
+and SHALL NOT pass the argument to `wireValue`. When omitted, the reader SHALL resolve by type.
+No `wireValue` overload SHALL take a reader key. WireGen reads the argument as source text, so
+writing `reader: nil` explicitly does not resolve by type, which is tracked as a defect in
+https://github.com/swift-wire/swift-wire/issues/442.
 
 #### Scenario: both spellings at one parameter site
 - **WHEN** one function declares one parameter with `reader:` omitted and another with `reader: Keys.overrides`
@@ -43,7 +46,11 @@ No `wireValue` overload SHALL take a reader key.
 - **WHEN** two sites read `forKey: "couchdb.port"`, one from the type-resolved reader and one from `Keys.overrides`
 - **THEN** the graph holds two distinct bindings, one per selected reader
 
-Pinned by: `Tests/WireConfigurationTests/ConfigPropertyTests.swift` (`theSelectorIsAcceptedAndDoesNotReachResolution`) for the first scenario. The second is pinned by nothing yet.
+#### Scenario: an explicit `nil` selector
+- **WHEN** a site is written `@ConfigProperty(reader: nil, forKey: "port", default: 8080) port: Int`
+- **THEN** WireGen keys the producer's `ConfigReader` dependency by the text `nil` and reports "key 'nil' is referenced but never declared"
+
+Pinned by: `Tests/WireConfigurationTests/ConfigPropertyTests.swift` (`theSelectorIsAcceptedAndDoesNotReachResolution`) for the first scenario. The second is pinned by nothing yet in this repository; the rule is pinned in swift-wire by [InjectionRewriteTests.swift](https://github.com/swift-wire/swift-wire/blob/main/Tests/WireGenCoreTests/InjectionRewriteTests.swift) (`sameArgumentsFromDifferentProvidersAreDistinctBindings`), using two keyed readers. The third is pinned by nothing yet.
 
 ### Requirement: Identical sites share one producer
 WireGen SHALL synthesise one producer per distinct combination of annotation arguments, site type
@@ -56,13 +63,14 @@ and selected reader, so two sites written identically resolve to one binding.
 Pinned by: nothing yet in this repository. The deduplication rule is specified in swift-wire's adapter-annotations spec.
 
 ### Requirement: Consumers depend on the package directly
-For `@ConfigProperty` to be recognised, the consuming target SHALL list `WireConfiguration` as a
-direct dependency alongside `Wire`, and SHALL apply a Wire build plugin. Any build plugin that runs
-`WireGen` SHALL suffice, including another adapter's.
+For `@ConfigProperty` to be recognised, the composition root (the target that applies a Wire build
+plugin) SHALL list `WireConfiguration` as a direct dependency alongside `Wire`. This holds even when
+the `@ConfigProperty` sites live in a contributor library, which applies no plugin itself. Any build
+plugin that runs `WireGen` SHALL suffice, including another adapter's.
 
 #### Scenario: transitive dependency only
-- **WHEN** a target depends on a library that depends on `WireConfiguration`, but does not list `WireConfiguration` itself
-- **THEN** its `@ConfigProperty` sites are not rewritten, because Wire activates only direct dependencies
+- **WHEN** a composition root depends on a library that depends on `WireConfiguration`, but does not list `WireConfiguration` itself
+- **THEN** its `@ConfigProperty` sites, and those of any library it composes, are not rewritten, because Wire activates only direct dependencies
 
 #### Scenario: another adapter's plugin
 - **WHEN** a target applies wire-mvc's `WireMVCBuildPlugin` rather than `WireBuildPlugin`
@@ -72,14 +80,15 @@ Pinned by: nothing yet. The activation rule is specified in swift-wire's multi-m
 
 ### Requirement: The package builds on Linux and on macOS with a current SDK
 The package SHALL declare a macOS 15 deployment target and SHALL build and test on Linux with
-Swift 6.3.3 and 6.4.0. On macOS it SHALL be built against an Xcode 26 SDK; against an older SDK the
-build fails inside swift-configuration, not in this package.
+Swift 6.3.3 and 6.4.0. On macOS it SHALL be built against an Xcode 26 SDK. Against an older SDK the
+build fails inside swift-configuration
+(https://github.com/apple/swift-configuration/issues/178), not in this package.
 
 #### Scenario: the CI matrix
 - **WHEN** CI runs
 - **THEN** the Linux jobs run on `ubuntu-24.04` with Swift 6.3.3 and 6.4.0, and the macOS jobs run on `macos-26`
 
-Pinned by: `.github/workflows/build.yml` (jobs `Linux / Swift`, `macOS 26 / Swift`).
+Pinned by: `.github/workflows/build.yml` (jobs `Linux / Swift`, `macOS 26 / Swift`) for the builds CI runs. The macOS 15 deployment target and the older-SDK failure are pinned by nothing yet: no job builds against an older SDK.
 
 ## Related specifications
 

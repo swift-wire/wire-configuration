@@ -49,20 +49,33 @@ form SHALL be declared `throws`.
 - **WHEN** the three `Int` overloads of `wireValue` are invoked
 - **THEN** they call `int(forKey:isSecret:default:)`, `int(forKey:isSecret:)` and `requiredInt(forKey:isSecret:)` respectively
 
-Pinned by: `Tests/WireConfigurationTests/ConfigPropertyTests.swift` (`requiredFormThrowsWhenAbsent`, `optionalFormYieldsNilWhenAbsent`, `defaultedFormFallsBackWhenAbsent`).
+Pinned by: nothing yet.
 
 ### Requirement: Six value types are supported
 `@ConfigProperty` SHALL accept sites of type `Int`, `String`, `Bool`, `Double`, `[String]` and
-`[Int]`, each in all three forms. Support is by constrained overload on `Value`, so a site of any
-other type SHALL fail to compile at the annotation.
+`[Int]`, each in all three forms.
 
 #### Scenario: a supported type
 - **WHEN** a parameter of type `[String]` is annotated `@ConfigProperty(forKey: "hosts", default: [])`
 - **THEN** the site compiles and reads through `stringArray(forKey:isSecret:default:)`
 
-#### Scenario: an unsupported type
+Pinned by: nothing yet.
+
+### Requirement: An unsupported type is rejected at the annotation only at a parameter site
+At a parameter site, support is by constrained overload on `Value`, so a site of any other type
+SHALL fail to compile at the annotation. At a stored-property site the peer macro SHALL NOT check
+the property's type, so an unsupported type, or a `default:` of a type other than the property's,
+compiles at the annotation and fails only where the WireGen-generated
+`ConfigProperty<T>.wireValue(...)` call does not type-check, which is tracked as a defect in
+https://github.com/swift-wire/wire-configuration/issues/14.
+
+#### Scenario: an unsupported type at a parameter site
 - **WHEN** a parameter of type `URL` is annotated `@ConfigProperty(forKey: "endpoint")`
 - **THEN** compilation fails at the annotation because no `ConfigProperty` initialiser is constrained to `URL`
+
+#### Scenario: an unsupported type at a stored-property site
+- **WHEN** a stored property is declared `@ConfigProperty(forKey: "endpoint") let endpoint: URL`
+- **THEN** the attribute compiles, because the peer macro overload without `default:` names no value type
 
 Pinned by: nothing yet.
 
@@ -70,9 +83,13 @@ Pinned by: nothing yet.
 Every initialiser and every `wireValue` overload SHALL take `isSecret: Bool` defaulting to `false`,
 and `wireValue` SHALL forward it to the reader call so redaction is the reader's decision.
 
-#### Scenario: a secret site
-- **WHEN** a site is written `@ConfigProperty(forKey: "db.password", isSecret: true)`
-- **THEN** the synthesised producer's `wireValue` call passes `isSecret: true` to `requiredString(forKey:isSecret:)`
+#### Scenario: a secret String parameter
+- **WHEN** a `String` parameter is written `@ConfigProperty(forKey: "db.password", isSecret: true) password: String`
+- **THEN** the synthesised producer calls `ConfigProperty<String>.wireValue(from: _wireProvider, forKey: "db.password", isSecret: true)`
+
+#### Scenario: forwarding to the reader
+- **WHEN** `ConfigProperty<String>.wireValue(from:forKey:isSecret:)` is called with `isSecret: true`
+- **THEN** it passes `isSecret: true` to `requiredString(forKey:isSecret:)`
 
 Pinned by: nothing yet.
 
@@ -106,8 +123,10 @@ Pinned by: `Tests/WireConfigurationTests/ConfigPropertyTests.swift` (`attachment
 ### Requirement: Wire is told about the annotation through an injection rewrite
 The package SHALL declare `wireConfigPropertyAnnotation` as a `WireAdapterAnnotationV1` for
 annotation `ConfigProperty` with capability `.rewritesInjection(provider: "ConfigReader",
-selector: .labelled("reader"))`. For each annotated site, WireGen SHALL synthesise a producer that
-depends on a `ConfigReader` binding and returns the result of
+selector: .labelled("reader"))`. For each distinct combination of the annotation's arguments and the
+site's type, WireGen SHALL synthesise one producer, shared by every site with that combination. The
+producer depends on a `ConfigReader` binding, keyed by the `reader:` argument when one is written,
+and returns the result of
 `ConfigProperty<Value>.wireValue(from: <reader>, <the annotation's arguments verbatim, minus reader:>)`.
 
 #### Scenario: a defaulted String site in a `@Provides` function
