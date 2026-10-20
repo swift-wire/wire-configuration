@@ -19,9 +19,9 @@ on:
 # Linux has no SDK to mismatch, but the same API floor applies.
 #
 # The version literals below are deliberate, not a duplicated pin. `.swift-version` names the toolchain
-# this package is developed against (6.4.0 today); the build, test and cross-compile jobs are a regression
+# this package is developed against (6.4.1 today); the build, test and cross-compile jobs are a regression
 # check that the package still builds on every released Swift it supports, and it is tools-version 6.3
-# with a swift-syntax floor on the 603 line, so 6.3.3 stays in the matrix as the floor with 6.4.0 beside
+# with a swift-syntax floor on the 603 line, so 6.3.3 stays in the matrix as the floor with 6.4.1 beside
 # it — the same policy as swift-wire. Bumping `.swift-version` must not touch them. Only the swift-format
 # and Coverage jobs read the file, since one formatter and one measurement are all those need.
 jobs:
@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift-version: ["6.3.3", "6.4.0"]
+        swift-version: ["6.3.3", "6.4.1"]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
@@ -47,7 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift-version: ["6.3.3", "6.4.0"]
+        swift-version: ["6.3.3", "6.4.1"]
     # macos-26 for its Xcode 26 SDK — see the note above. On macos-15 this job fails inside
     # swift-configuration, not in this package.
     runs-on: macos-26
@@ -95,7 +95,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift-version: ["6.3.3", "6.4.0"]
+        swift-version: ["6.3.3", "6.4.1"]
         # Every major the declared range admits (floor + ceiling = 603..<605), on every supported compiler,
         # matching swift-wire. SPM resolves to the newest major on its own, so without this the floor major
         # is never actually built; the aligned pairs (603 on 6.3, 604 on 6.4) are what a real adopter gets,
@@ -138,9 +138,9 @@ jobs:
           - swift-version: "6.3.3"
             sdk-url: https://download.swift.org/swift-6.3.3-release/static-sdk/swift-6.3.3-RELEASE/swift-6.3.3-RELEASE_static-linux-0.1.0.artifactbundle.tar.gz
             sdk-checksum: 87c3eaf908e67c0e13a84367119e12273cec1d2cd3d81f7d74bb36722d6b607b
-          - swift-version: "6.4.0"
-            sdk-url: https://download.swift.org/swift-6.4.0-release/static-sdk/swift-6.4.0-RELEASE/swift-6.4.0-RELEASE_static-linux-0.1.0.artifactbundle.tar.gz
-            sdk-checksum: 47d2fd89eebfdf9eb4d536b6710414297f755c17926cdebc4742c08982b40a9e
+          - swift-version: "6.4.1"
+            sdk-url: https://download.swift.org/swift-6.4.1-release/static-sdk/swift-6.4.1-RELEASE/swift-6.4.1-RELEASE_static-linux-0.1.0.artifactbundle.tar.gz
+            sdk-checksum: cef5592d7430ed3c5ae1ddda479849c6f5252bd94a5723db1559f984caf38a7c
     runs-on: ubuntu-24.04
     container:
       image: swift:${{ matrix.swift-version }}-noble
